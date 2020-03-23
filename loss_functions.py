@@ -9,7 +9,8 @@ loss_fs = {
 
 def cross_entropy_loss(prediction, ground_truth):
     # return - np.log(np.dot(prediction, ground_truth))
-    return - np.sum(np.multiply(ground_truth, np.log(prediction)), axis=1)
+    loss = - np.sum(np.multiply(ground_truth, np.log(prediction)), axis=1)
+    return loss
 
 
 def dz_cross_entropy_loss(prediction, ground_truth):
