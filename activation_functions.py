@@ -9,10 +9,10 @@ the diagonal elements which we'll then use in a Hadamard product.
 '''
 
 activation_fs = {
-            "identity": "identity",
-            "relu": "ReLU_activation",
-            "softmax": "softmax_activation"
-        }
+    "identity": "identity",
+    "relu": "ReLU_activation",
+    "softmax": "softmax_activation"
+}
 
 
 def identity(z):
