@@ -9,10 +9,10 @@ the diagonal elements which we'll then use in a Hadamard product.
 '''
 
 activation_fs = {
-            "identity": "identity",
-            "relu": "ReLU_activation",
-            "softmax": "softmax_activation"
-        }
+    "identity": "identity",
+    "relu": "ReLU_activation",
+    "softmax": "softmax_activation"
+}
 
 
 def identity(z):
@@ -24,6 +24,8 @@ def dz_identity(z):
 
 
 def ReLU_activation(z):
+    # z[z < 0] = 0
+    # return z
     return np.maximum(z, np.zeros(z.shape))
 
 

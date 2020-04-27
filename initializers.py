@@ -2,9 +2,9 @@ import numpy as np
 
 
 initializer_fs = {
-            "random": "random_initializer",
-            "he": "He_initializer"
-        }
+    "random": "random_initializer",
+    "he": "He_initializer"
+}
 
 
 def random_initializer(input_layer_size, output_layer_size):

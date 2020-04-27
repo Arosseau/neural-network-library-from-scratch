@@ -1,10 +1,7 @@
 import numpy as np
 
-import activation_functions
-import initializers
-import loss_functions
-
-from layers import *
+from utils import get_activation, get_initializer, get_loss
+from layers import Layer
 
 
 class NeuralNetwork:
@@ -20,7 +17,7 @@ class NeuralNetwork:
 
     def initialize_weights(self, initializer="random"):
 
-        weight_initializer = getattr(initializers, initializers.initializer_fs[initializer.lower()])
+        weight_initializer = get_initializer(initializer)
 
         prev_layer_size = self.layers[0].n
         for l in range(1, len(self.layers)):
@@ -36,7 +33,7 @@ class NeuralNetwork:
         input_with_ones[:, :-1] = input_values  # faster than stacking
         raw_output = np.matmul(input_with_ones, weights)
 
-        activated_output = getattr(activation_functions, activation_functions.activation_fs[activation.lower()])(raw_output)
+        activated_output = get_activation(activation)(raw_output)
         return raw_output, activated_output
 
     def inference(self, input_values, save_outputs=False):
@@ -47,11 +44,13 @@ class NeuralNetwork:
         assert(input_values.shape[1] == (self.weights[0].shape[0] - 1)), \
             "Input array has incompatible size with input layer."
 
-        raw_outputs, activations, activated_outputs = [input_values], ["identity"], [input_values]
+        raw_outputs, activated_outputs = [input_values], [input_values]
+        activations = ["identity"]
         for l in range(len(self.weights)):
             activation_f = self.layers[l+1].activation
-            raw_output, activated_output = \
-                self._propagate_one_layer(input_values, self.weights[l], activation=activation_f)
+            raw_output, activated_output = self._propagate_one_layer(
+                input_values, self.weights[l], activation=activation_f
+            )
             if save_outputs:
                 raw_outputs.append(raw_output)
                 activations.append(activation_f)
@@ -69,36 +68,42 @@ class NeuralNetwork:
 
         amount_of_labels = len(set(batch[:, -1]))
         for epoch in range(epochs):
-            print("Epoch: ", epoch)
+            print("Epoch: ", epoch, end=", ")
             np.random.shuffle(batch)  # avoids correlated mini batches or memorization of order
             avg_loss_epoch = []  # average loss over all samples in batch for this epoch
             sample_i = 0
             while sample_i < (len(batch) - mini_batch_size):
                 mini_batch = batch[sample_i:sample_i + mini_batch_size]
                 input_values, labels = mini_batch[:, :-1], mini_batch[:, -1]
-                labels = np.eye(amount_of_labels)[labels.astype(int)]  # one-hot-encoding of numerical labels
-                raw_outputs, activations, activated_outputs = self.inference(input_values, save_outputs=True)
+                # one-hot-encoding of numerical labels:
+                labels = np.eye(amount_of_labels)[labels.astype(int)]
+                raw_outputs, activations, activated_outputs = \
+                    self.inference(input_values, save_outputs=True)
 
                 ''' Get loss function and its derivatives:
                  ("dx_y" means partial derivative of y to x) '''
-                minibatch_loss = getattr(loss_functions, loss_functions.loss_fs[loss.lower()])(activated_outputs[-1], labels)
+                minibatch_loss = get_loss(loss)(activated_outputs[-1], labels)
                 avg_loss_epoch.append(minibatch_loss)
                 try:
-                    da_loss = getattr(loss_functions, "da_" + loss_functions.loss_fs[loss.lower()])(activated_outputs[-1], labels)
-                    dz_a = getattr(activation_functions, "dz_" + activation_functions.activation_fs[activations[-1]])(raw_outputs[-1])
+                    da_loss = get_loss(loss, d="da_")(activated_outputs[-1], labels)
+                    dz_a = get_activation(activations[-1], d="dz_")(raw_outputs[-1])
                     dz_loss = np.multiply(da_loss, dz_a)  # Hadamard product
                 except AttributeError as e:
-                    dz_loss = getattr(loss_functions, "dz_" + loss_functions.loss_fs[loss.lower()])(activated_outputs[-1], labels)
+                    dz_loss = get_loss(loss, d="dz_")(activated_outputs[-1], labels)
 
                 for l in range(1, len(self.weights)):
                     m, n = activated_outputs[-l-1].shape
+                    # faster than stacking ones to our activated outputs:
                     activated_outputs_with_ones = np.ones((m, n + 1))
-                    activated_outputs_with_ones[:, :-1] = activated_outputs[-l-1]  # faster than stacking
+                    activated_outputs_with_ones[:, :-1] = activated_outputs[-l-1]
                     dw_loss = np.matmul(activated_outputs_with_ones.T, dz_loss)
                     self.weights[-l] = self.weights[-l] - learning_rate * dw_loss / len(batch)
 
-                    dz_a = getattr(activation_functions, "dz_" + activation_functions.activation_fs[activations[-l-1]])(raw_outputs[-l-1])
-                    dz_loss = np.multiply(np.matmul(dz_loss, self.weights[-l][:-1, :].T), dz_a)  # removed biases
+                    dz_a = get_activation(activations[-l-1], d="dz_")(raw_outputs[-l-1])
+                    dz_loss = np.multiply(
+                        np.matmul(dz_loss, self.weights[-l][:-1, :].T),  # removed biases
+                        dz_a
+                    )
 
                 m, n = activated_outputs[0].shape
                 activated_outputs_with_ones = np.ones((m, n + 1))
@@ -109,48 +114,4 @@ class NeuralNetwork:
                 sample_i += mini_batch_size
 
             avg_loss_epoch = np.sum(np.array(avg_loss_epoch)) / np.array(avg_loss_epoch).size
-            print("loss: ", avg_loss_epoch)
-
-
-def main():
-    def loadMNIST(prefix, folder):
-        intType = np.dtype('int32').newbyteorder('>')
-        nMetaDataBytes = 4 * intType.itemsize
-
-        data = np.fromfile(folder + "/" + prefix + '-images-idx3-ubyte', dtype='ubyte')
-        magicBytes, nImages, width, height = np.frombuffer(data[:nMetaDataBytes].tobytes(), intType)
-        data = data[nMetaDataBytes:].astype(dtype='float32').reshape([nImages, width, height])
-
-        labels = np.fromfile(folder + "/" + prefix + '-labels-idx1-ubyte',
-                             dtype='ubyte')[2 * intType.itemsize:]
-
-        return data, labels
-
-    train, train_labels = loadMNIST("train", "./mnist/")
-    test, test_labels = loadMNIST("t10k", "./mnist/")
-
-    train = train.reshape((len(train), 784)) / 255.
-    test = test.reshape((len(test), 784)) / 255.
-
-    # print(train[0])
-
-    neural_net = NeuralNetwork()
-    neural_net.add(InputLayer(784))
-    neural_net.add(DenseLayer(30, activation="relu"))
-    neural_net.add(DenseLayer(10, activation="softmax"))
-    neural_net.initialize_weights(initializer="He")
-
-    # print(neural_net.weights[-1][:, 0])
-
-    neural_net.train(train, labels=train_labels.astype(int), loss="cross_entropy", learning_rate=0.1, epochs=10, mini_batch_size=8)
-
-    # raw_outputs, activations, activated_outputs = \
-    #     neural_net.inference(np.random.rand(3, 784), save_outputs=True)
-
-    # print(activated_outputs[-1])
-    # print("raw outputs: ", raw_outputs)
-    # print("activated outputs: ", activated_outputs)
-
-
-if __name__ == '__main__':
-    main()
+            print("Loss: ", avg_loss_epoch)
