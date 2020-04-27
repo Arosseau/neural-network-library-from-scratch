@@ -2,9 +2,9 @@ import numpy as np
 
 
 loss_fs = {
-            "quadratic": "quadratic_loss",
-            "cross_entropy": "cross_entropy_loss"
-        }
+    "quadratic": "quadratic_loss",
+    "cross_entropy": "cross_entropy_loss"
+}
 
 
 def cross_entropy_loss(prediction, ground_truth):
