@@ -65,7 +65,7 @@ class NeuralNetwork:
         assert(input_values.shape[1] == (self.weights[0].shape[0] - 1)), \
             "Input array has incompatible size with input layer."
 
-        raw_outputs = activated_outputs = [input_values]
+        raw_outputs, activated_outputs = [input_values], [input_values]
         activations = ["identity"]
         for l in range(len(self.weights)):
             activation_f = self.layers[l+1].activation

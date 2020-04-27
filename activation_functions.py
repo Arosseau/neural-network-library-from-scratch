@@ -24,8 +24,9 @@ def dz_identity(z):
 
 
 def ReLU_activation(z):
-    z[z < 0] = 0
-    return z
+    # z[z < 0] = 0
+    # return z
+    return np.maximum(z, np.zeros(z.shape))
 
 
 def dz_ReLU_activation(z):
