@@ -16,7 +16,6 @@ class NeuralNetwork:
         self.layers.append(layer)
 
     def initialize_weights(self, initializer="random"):
-
         weight_initializer = get_initializer(initializer)
 
         prev_layer_size = self.layers[0].n
@@ -62,7 +61,10 @@ class NeuralNetwork:
         else:
             return activated_output
 
-    def train(self, batch, labels=None, loss="quadratic", learning_rate=0.01, epochs=1, mini_batch_size=1):
+    def train(
+            self, batch, labels=None, loss="quadratic", learning_rate=0.01,
+            epochs=1, mini_batch_size=1
+    ):
         if labels is not None:
             batch = np.c_[batch, labels]
 
@@ -77,11 +79,12 @@ class NeuralNetwork:
                 input_values, labels = mini_batch[:, :-1], mini_batch[:, -1]
                 # one-hot-encoding of numerical labels:
                 labels = np.eye(amount_of_labels)[labels.astype(int)]
-                raw_outputs, activations, activated_outputs = \
-                    self.inference(input_values, save_outputs=True)
+                raw_outputs, activations, activated_outputs = self.inference(
+                    input_values, save_outputs=True
+                )
 
                 ''' Get loss function and its derivatives:
-                 ("dx_y" means partial derivative of y to x) '''
+                    ("dx_y" means partial derivative of y to x) '''
                 minibatch_loss = get_loss(loss)(activated_outputs[-1], labels)
                 avg_loss_epoch.append(minibatch_loss)
                 try:
