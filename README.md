@@ -4,6 +4,8 @@ Creating my own neural network/deep learning framework from scratch in python to
 ## Functionalities
 Basic functionalities only for now; solves the MNIST classification problem (and similar problems) well!
 
+To test this library, run the mnist.py file.
+
 ### Main NeuralNetwork class
    - Inference
    - Training:
